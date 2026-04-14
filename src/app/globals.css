@@ -1,26 +1,137 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: #0A0A0A;
+  --color-foreground: #FAFAFA;
+  --color-muted: #A1A1AA;
+  --color-muted-foreground: #71717A;
+  --color-border: #27272A;
+  --color-input: #18181B;
+  --color-card: #111111;
+  --color-card-foreground: #FAFAFA;
+  --color-popover: #18181B;
+  --color-popover-foreground: #FAFAFA;
+  --color-primary: #A855F7;
+  --color-primary-foreground: #FAFAFA;
+  --color-accent: #27272A;
+  --color-accent-foreground: #FAFAFA;
+  --color-destructive: #EF4444;
+  --color-success: #22C55E;
+  --color-warning: #EAB308;
+  --color-node-text: #EAB308;
+  --color-node-image: #3B82F6;
+  --color-node-video: #8B5CF6;
+  --color-node-llm: #10B981;
+  --color-node-crop: #F97316;
+  --color-node-extract: #EC4899;
+  --color-sidebar-bg: #0F0F0F;
+  --color-panel-bg: #111111;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  border-color: var(--color-border);
+}
+
+/* Exclude Clerk components from global border override */
+.cl-rootBox *,
+.cl-rootBox *::before,
+.cl-rootBox *::after {
+  border-color: revert;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* React Flow overrides for Krea-style dark theme */
+.react-flow__background {
+  background-color: #0A0A0A !important;
+}
+
+.react-flow__minimap {
+  background-color: #18181B !important;
+  border: 1px solid #27272A !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls {
+  background-color: #18181B !important;
+  border: 1px solid #27272A !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls-button {
+  background-color: #18181B !important;
+  border-color: #27272A !important;
+  fill: #A1A1AA !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: #27272A !important;
+}
+
+.react-flow__edge-path {
+  stroke: #A855F7 !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__connection-line {
+  stroke: #A855F7 !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  border: 2px solid #A855F7 !important;
+  background: #18181B !important;
+}
+
+.react-flow__handle:hover {
+  background: #A855F7 !important;
+}
+
+/* Pulsating glow effect for running nodes (uses --glow-color CSS var set by NodeShell) */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px color-mix(in srgb, var(--glow-color, #A855F7) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 24px 8px color-mix(in srgb, var(--glow-color, #A855F7) 70%, transparent);
+  }
+}
+
+.node-running {
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}
+
+/* Selection styling */
+.react-flow__node.selected {
+  outline: none !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
 }

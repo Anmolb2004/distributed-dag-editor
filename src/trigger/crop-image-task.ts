@@ -1,0 +1,70 @@
+import { schemaTask } from "@trigger.dev/sdk";
+import { z } from "zod";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
+
+const execFileAsync = promisify(execFile);
+
+export const cropImageTask = schemaTask({
+  id: "crop-image",
+  schema: z.object({
+    imageUrl: z.string(),
+    xPercent: z.number().min(0).max(100).default(0),
+    yPercent: z.number().min(0).max(100).default(0),
+    widthPercent: z.number().min(0).max(100).default(100),
+    heightPercent: z.number().min(0).max(100).default(100),
+  }),
+  retry: { maxAttempts: 2 },
+  run: async (payload) => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "crop-"));
+    const inputPath = path.join(tmpDir, "input.png");
+    const outputPath = path.join(tmpDir, "output.png");
+
+    try {
+      const response = await fetch(payload.imageUrl);
+      if (!response.ok) throw new Error(`Failed to download image: ${response.status}`);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      await fs.writeFile(inputPath, buffer);
+
+      // Use ffprobe to get dimensions
+      let ffmpegBin: string;
+      try {
+        ffmpegBin = require("ffmpeg-static");
+      } catch {
+        ffmpegBin = "ffmpeg";
+      }
+
+      // Get image dimensions
+      const probeResult = await execFileAsync(ffmpegBin, [
+        "-i", inputPath,
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0",
+        "-f", "null", "-",
+      ]).catch(() => null);
+
+      // Use FFmpeg crop filter with percentage-based params
+      // crop=w:h:x:y where values are expressions
+      const cropFilter = `crop=iw*${payload.widthPercent / 100}:ih*${payload.heightPercent / 100}:iw*${payload.xPercent / 100}:ih*${payload.yPercent / 100}`;
+
+      await execFileAsync(ffmpegBin, [
+        "-i", inputPath,
+        "-vf", cropFilter,
+        "-y",
+        outputPath,
+      ]);
+
+      const outputBuffer = await fs.readFile(outputPath);
+      const base64 = outputBuffer.toString("base64");
+      const dataUrl = `data:image/png;base64,${base64}`;
+
+      return { output: dataUrl };
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    }
+  },
+});

@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  clerkUserId String
+  name        String   @default("Untitled")
+  description String?
+
+  /// React Flow serialized state (nodes + edges + viewport)
+  flowState   Json     @default("{}")
+
+  thumbnail   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  runs WorkflowRun[]
+
+  @@index([clerkUserId])
+  @@map("workflows")
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  PARTIAL
+  CANCELLED
+}
+
+enum RunScope {
+  FULL
+  PARTIAL
+  SINGLE
+}
+
+model WorkflowRun {
+  id          String    @id @default(cuid())
+  workflowId  String
+  clerkUserId String
+  status      RunStatus @default(PENDING)
+  scope       RunScope  @default(FULL)
+
+  /// Which node IDs were selected for this run
+  targetNodeIds String[] @default([])
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  durationMs Int?
+
+  workflow Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeRuns NodeRun[]
+
+  @@index([workflowId])
+  @@index([clerkUserId])
+  @@map("workflow_runs")
+}
+
+enum NodeRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+model NodeRun {
+  id            String        @id @default(cuid())
+  workflowRunId String
+  nodeId        String
+  nodeType      String
+  nodeLabel     String?
+  status        NodeRunStatus @default(PENDING)
+
+  /// Serialized input data the node received
+  inputs        Json          @default("{}")
+  /// Serialized output data the node produced
+  outputs       Json          @default("{}")
+  /// Error message if failed
+  error         String?
+
+  startedAt     DateTime      @default(now())
+  finishedAt    DateTime?
+  durationMs    Int?
+
+  /// Trigger.dev task run ID for tracking
+  triggerRunId  String?
+
+  workflowRun WorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+
+  @@index([workflowRunId])
+  @@index([nodeId])
+  @@map("node_runs")
+}
