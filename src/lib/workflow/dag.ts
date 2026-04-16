@@ -109,24 +109,26 @@ export function resolveNodeInputs(
   Object.assign(inputs, nodeData);
 
   // Override with connected values
+  const imageUrls: string[] = [];
   const incomingEdges = edges.filter((e) => e.target === nodeId);
   for (const edge of incomingEdges) {
     const sourceOutputs = nodeOutputs.get(edge.source);
     if (sourceOutputs && edge.targetHandle) {
       const sourceValue = sourceOutputs[edge.sourceHandle ?? "output"];
       if (sourceValue !== undefined) {
-        inputs[edge.targetHandle] = sourceValue;
-
-        // Special handling: collect images into array for LLM node
-        if (edge.targetHandle === "images") {
-          const existing = inputs._imageUrls as string[] ?? [];
-          if (typeof sourceValue === "string") {
-            existing.push(sourceValue);
-          }
-          inputs._imageUrls = existing;
+        // For the "images" handle, collect into an array instead of overwriting
+        if (edge.targetHandle === "images" && typeof sourceValue === "string") {
+          imageUrls.push(sourceValue);
+        } else {
+          inputs[edge.targetHandle] = sourceValue;
         }
       }
     }
+  }
+
+  // Set the deduplicated image URLs array
+  if (imageUrls.length > 0) {
+    inputs._imageUrls = [...new Set(imageUrls)];
   }
 
   return inputs;

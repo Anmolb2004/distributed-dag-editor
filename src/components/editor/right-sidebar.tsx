@@ -1,6 +1,7 @@
 "use client";
 
-import { X, CheckCircle2, XCircle, Clock, Loader2, MinusCircle } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Loader2, MinusCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useHistoryStore, type WorkflowRunEntry, type NodeRunEntry } from "@/store/history-store";
 import { formatTimestamp, formatDuration } from "@/lib/format";
@@ -44,7 +45,7 @@ function getScopeLabel(scope: string, targetNodeIds: string[]) {
 
 function RunDetail({ run }: { run: WorkflowRunEntry }) {
   return (
-    <div className="space-y-2 py-2">
+    <div className="space-y-1 pt-2">
       {run.nodeRuns.map((nr) => (
         <NodeRunItem key={nr.nodeId} nodeRun={nr} />
       ))}
@@ -56,48 +57,125 @@ function RunDetail({ run }: { run: WorkflowRunEntry }) {
 }
 
 function NodeRunItem({ nodeRun }: { nodeRun: NodeRunEntry }) {
+  const [expanded, setExpanded] = useState(false);
   const statusConfig = STATUS_CONFIG[nodeRun.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
   const Icon = statusConfig.icon;
 
+  const hasInputs = nodeRun.inputs && Object.keys(nodeRun.inputs).length > 0;
+  const hasOutputs = nodeRun.outputs && Object.keys(nodeRun.outputs).length > 0;
+  const hasDetails = hasInputs || hasOutputs || nodeRun.error;
+
   return (
-    <div className="flex items-start gap-2 border-l-2 border-border pl-3 ml-2">
-      <Icon
+    <div className="border-l-2 border-border ml-2">
+      <button
+        onClick={() => hasDetails && setExpanded(!expanded)}
         className={cn(
-          "mt-0.5 h-3.5 w-3.5 shrink-0",
-          statusConfig.color,
-          nodeRun.status === "running" && "animate-spin"
+          "flex w-full items-start gap-2 pl-3 pr-1 py-1.5 text-left",
+          hasDetails && "hover:bg-accent/50 rounded-r-md cursor-pointer"
         )}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium truncate">{nodeRun.nodeLabel}</span>
-          {nodeRun.durationMs !== undefined && (
-            <span className="text-[10px] text-muted-foreground">
-              {formatDuration(nodeRun.durationMs)}
-            </span>
+      >
+        <Icon
+          className={cn(
+            "mt-0.5 h-3.5 w-3.5 shrink-0",
+            statusConfig.color,
+            nodeRun.status === "running" && "animate-spin"
+          )}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium truncate">{nodeRun.nodeLabel}</span>
+            {nodeRun.durationMs !== undefined && (
+              <span className="text-[10px] text-muted-foreground">
+                {formatDuration(nodeRun.durationMs)}
+              </span>
+            )}
+          </div>
+          {/* Inline preview when not expanded */}
+          {!expanded && nodeRun.error && (
+            <p className="mt-0.5 text-[10px] text-destructive truncate">
+              Error: {nodeRun.error}
+            </p>
+          )}
+          {!expanded && nodeRun.status === "success" && hasOutputs && (
+            <p className="mt-0.5 text-[10px] text-muted-foreground truncate">
+              Output: {getValuePreview(nodeRun.outputs)}
+            </p>
           )}
         </div>
-        {nodeRun.error && (
-          <p className="mt-0.5 text-[10px] text-destructive truncate">
-            Error: {nodeRun.error}
-          </p>
+        {hasDetails && (
+          expanded
+            ? <ChevronDown className="h-3 w-3 mt-1 shrink-0 text-muted-foreground" />
+            : <ChevronRight className="h-3 w-3 mt-1 shrink-0 text-muted-foreground" />
         )}
-        {nodeRun.status === "success" && nodeRun.outputs && Object.keys(nodeRun.outputs).length > 0 && (
-          <p className="mt-0.5 text-[10px] text-muted-foreground truncate">
-            Output: {getOutputPreview(nodeRun.outputs)}
-          </p>
-        )}
-      </div>
+      </button>
+
+      {/* Expanded details: inputs, outputs, error */}
+      {expanded && (
+        <div className="ml-8 mr-2 mb-1 space-y-1.5">
+          {hasInputs && (
+            <div>
+              <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">Inputs</span>
+              <div className="mt-0.5 space-y-0.5">
+                {Object.entries(filterDisplayInputs(nodeRun.inputs)).map(([key, val]) => (
+                  <div key={key} className="flex gap-1.5">
+                    <span className="text-[10px] text-muted-foreground shrink-0">{key}:</span>
+                    <span className="text-[10px] text-foreground truncate">{formatValue(val)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {hasOutputs && (
+            <div>
+              <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">Outputs</span>
+              <div className="mt-0.5 space-y-0.5">
+                {Object.entries(nodeRun.outputs).map(([key, val]) => (
+                  <div key={key} className="flex gap-1.5">
+                    <span className="text-[10px] text-muted-foreground shrink-0">{key}:</span>
+                    <span className="text-[10px] text-foreground truncate">{formatValue(val)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {nodeRun.error && (
+            <div>
+              <span className="text-[9px] font-medium uppercase tracking-wider text-destructive">Error</span>
+              <p className="mt-0.5 text-[10px] text-destructive">{nodeRun.error}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-function getOutputPreview(outputs: Record<string, unknown>): string {
-  const val = outputs.output ?? outputs.result ?? Object.values(outputs)[0];
+/** Filter out internal/noisy keys from inputs for display */
+function filterDisplayInputs(inputs: Record<string, unknown>): Record<string, unknown> {
+  const hidden = new Set(["isRunning", "nodeType", "label", "_imageUrls", "result"]);
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(inputs)) {
+    if (hidden.has(k)) continue;
+    if (v === null || v === undefined || v === "") continue;
+    result[k] = v;
+  }
+  return result;
+}
+
+function formatValue(val: unknown): string {
   if (typeof val === "string") {
+    if (val.startsWith("data:image")) return "[image data]";
+    if (val.startsWith("http")) return val.length > 60 ? val.slice(0, 60) + "..." : val;
     return val.length > 80 ? val.slice(0, 80) + "..." : val;
   }
-  return JSON.stringify(val)?.slice(0, 80) ?? "";
+  if (Array.isArray(val)) return `[${val.length} items]`;
+  if (typeof val === "object" && val !== null) return JSON.stringify(val).slice(0, 60);
+  return String(val);
+}
+
+function getValuePreview(outputs: Record<string, unknown>): string {
+  const val = outputs.output ?? outputs.result ?? Object.values(outputs)[0];
+  return formatValue(val);
 }
 
 export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
@@ -112,7 +190,6 @@ export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
     >
       {isOpen && (
         <>
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <span className="text-sm font-medium">Execution History</span>
             <button
@@ -123,7 +200,6 @@ export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
             </button>
           </div>
 
-          {/* Run list */}
           <div className="flex-1 overflow-y-auto">
             {runs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-4">
@@ -160,7 +236,6 @@ export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
                       )}
                     </button>
 
-                    {/* Expanded detail */}
                     {selectedRunId === run.id && <RunDetail run={run} />}
                   </div>
                 ))}

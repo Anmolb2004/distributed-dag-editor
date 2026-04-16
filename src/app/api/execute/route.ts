@@ -5,9 +5,6 @@ import { executeWorkflowSchema } from "@/lib/zod/schemas/execution";
 import { resolveExecutionOrder, resolveNodeInputs } from "@/lib/workflow/dag";
 import type { Node, Edge } from "@xyflow/react";
 import { tasks, runs } from "@trigger.dev/sdk";
-import type { llmTask } from "@/trigger/llm-task";
-import type { cropImageTask } from "@/trigger/crop-image-task";
-import type { extractFrameTask } from "@/trigger/extract-frame-task";
 
 export const POST = withAuth(async (req, { userId }) => {
   const body = await req.json();
@@ -29,7 +26,6 @@ export const POST = withAuth(async (req, { userId }) => {
     throw new ApiError("BAD_REQUEST", "Workflow has no nodes");
   }
 
-  // Determine target nodes
   let targetNodeIds: string[] | undefined;
   if (input.scope === "SINGLE" && input.targetNodeIds.length === 1) {
     targetNodeIds = input.targetNodeIds;
@@ -37,11 +33,9 @@ export const POST = withAuth(async (req, { userId }) => {
     targetNodeIds = input.targetNodeIds;
   }
 
-  // Resolve execution order
   const layers = resolveExecutionOrder(nodes, edges, targetNodeIds);
   const allNodeIds = layers.flatMap((l) => l.nodeIds);
 
-  // Create workflow run record
   const run = await db.workflowRun.create({
     data: {
       workflowId: input.workflowId,
@@ -65,8 +59,7 @@ export const POST = withAuth(async (req, { userId }) => {
   });
 
   // Execute layers sequentially, nodes within each layer in parallel.
-  // If a node fails, all its downstream dependents are skipped (not attempted).
-  // Independent parallel branches continue regardless.
+  // If a node fails, downstream dependents are skipped. Independent branches continue.
   const nodeOutputs = new Map<string, Record<string, unknown>>();
   const failedNodeIds = new Set<string>();
   const skippedNodeIds = new Set<string>();
@@ -77,7 +70,6 @@ export const POST = withAuth(async (req, { userId }) => {
   let hasSuccess = false;
   const startTime = Date.now();
 
-  // Build reverse dependency lookup: nodeId → set of upstream source nodeIds
   const upstreamDeps = new Map<string, Set<string>>();
   for (const edge of edges) {
     if (!upstreamDeps.has(edge.target)) upstreamDeps.set(edge.target, new Set());
@@ -93,7 +85,6 @@ export const POST = withAuth(async (req, { userId }) => {
         const nodeRun = run.nodeRuns.find((nr) => nr.nodeId === nodeId);
         if (!nodeRun) return;
 
-        // Skip this node if any upstream dependency failed or was skipped
         const deps = upstreamDeps.get(nodeId) ?? new Set();
         const hasFailedUpstream = [...deps].some(
           (depId) => failedNodeIds.has(depId) || skippedNodeIds.has(depId)
@@ -162,8 +153,6 @@ export const POST = withAuth(async (req, { userId }) => {
 
   const totalDuration = Date.now() - startTime;
 
-  // Determine final status:
-  // SUCCESS = all nodes passed, FAILED = all failed/skipped, PARTIAL = mix of success + failure
   const finalStatus =
     hasFailure && hasSuccess ? "PARTIAL" :
     hasFailure ? "FAILED" :
@@ -195,7 +184,14 @@ async function triggerAndWaitForResult<T>(
     if (run.status === "COMPLETED") {
       return run.output as T;
     }
-    if (run.status === "FAILED" || run.status === "CANCELED" || run.status === "CRASHED" || run.status === "SYSTEM_FAILURE" || run.status === "EXPIRED" || run.status === "TIMED_OUT") {
+    if (
+      run.status === "FAILED" ||
+      run.status === "CANCELED" ||
+      run.status === "CRASHED" ||
+      run.status === "SYSTEM_FAILURE" ||
+      run.status === "EXPIRED" ||
+      run.status === "TIMED_OUT"
+    ) {
       throw new Error(`Task ${taskId} failed with status: ${run.status}`);
     }
   }
@@ -203,6 +199,9 @@ async function triggerAndWaitForResult<T>(
   throw new Error(`Task ${taskId} subscription ended without completion`);
 }
 
+/**
+ * ALL node executions go through Trigger.dev tasks (non-negotiable per assignment).
+ */
 async function executeNode(
   nodeType: string,
   inputs: Record<string, unknown>,
@@ -211,19 +210,19 @@ async function executeNode(
   switch (nodeType) {
     case "text": {
       const text = (inputs.text as string) ?? (node.data?.text as string) ?? "";
-      return { output: text };
+      return triggerAndWaitForResult("text-passthrough", { text });
     }
 
     case "uploadImage": {
       const url = (inputs.imageUrl as string) ?? (node.data?.imageUrl as string);
       if (!url) throw new Error("No image uploaded yet. Click the node and upload an image first.");
-      return { output: url };
+      return triggerAndWaitForResult("upload-image-passthrough", { imageUrl: url });
     }
 
     case "uploadVideo": {
       const url = (inputs.videoUrl as string) ?? (node.data?.videoUrl as string);
       if (!url) throw new Error("No video uploaded yet. Click the node and upload a video first.");
-      return { output: url };
+      return triggerAndWaitForResult("upload-video-passthrough", { videoUrl: url });
     }
 
     case "llm": {
@@ -235,19 +234,15 @@ async function executeNode(
 
       if (!userMessage) throw new Error("User message is required. Type a prompt or connect a Text node to the user_message input.");
 
+      // Collect images from _imageUrls array (no duplicates)
       const imageUrls = (inputs._imageUrls as string[]) ?? [];
-      if (inputs.images && typeof inputs.images === "string") {
-        imageUrls.push(inputs.images);
-      }
 
-      const result = await triggerAndWaitForResult<{ output: string }>("llm-execute", {
+      return triggerAndWaitForResult("llm-execute", {
         model,
         systemPrompt: systemPrompt || undefined,
         userMessage,
         imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       });
-
-      return { output: result.output };
     }
 
     case "cropImage": {
@@ -257,15 +252,13 @@ async function executeNode(
         (node.data?.imageUrl as string);
       if (!imageUrl) throw new Error("No image connected. Connect an Upload Image node to the image input handle, then run again.");
 
-      const result = await triggerAndWaitForResult<{ output: string }>("crop-image", {
+      return triggerAndWaitForResult("crop-image", {
         imageUrl,
         xPercent: Number(inputs.x_percent ?? inputs.xPercent ?? 0),
         yPercent: Number(inputs.y_percent ?? inputs.yPercent ?? 0),
         widthPercent: Number(inputs.width_percent ?? inputs.widthPercent ?? 100),
         heightPercent: Number(inputs.height_percent ?? inputs.heightPercent ?? 100),
       });
-
-      return { output: result.output };
     }
 
     case "extractFrame": {
@@ -275,12 +268,10 @@ async function executeNode(
         (node.data?.videoUrl as string);
       if (!videoUrl) throw new Error("No video connected. Connect an Upload Video node to the video input handle, then run again.");
 
-      const result = await triggerAndWaitForResult<{ output: string }>("extract-frame", {
+      return triggerAndWaitForResult("extract-frame", {
         videoUrl,
         timestamp: String(inputs.timestamp ?? "0"),
       });
-
-      return { output: result.output };
     }
 
     default:

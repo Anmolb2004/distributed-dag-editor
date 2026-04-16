@@ -1,11 +1,17 @@
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/api/with-auth";
 import { ApiError } from "@/lib/api/errors";
 import { updateWorkflowSchema } from "@/lib/zod/schemas/workflow";
 
+const paramsSchema = z.object({
+  id: z.string().min(1),
+});
+
 export const GET = withAuth(async (_req, { userId, params }) => {
+  const { id } = paramsSchema.parse(params);
   const workflow = await db.workflow.findFirst({
-    where: { id: params.id, clerkUserId: userId },
+    where: { id, clerkUserId: userId },
     include: {
       runs: {
         orderBy: { startedAt: "desc" },
@@ -21,8 +27,9 @@ export const GET = withAuth(async (_req, { userId, params }) => {
 });
 
 export const PATCH = withAuth(async (req, { userId, params }) => {
+  const { id } = paramsSchema.parse(params);
   const existing = await db.workflow.findFirst({
-    where: { id: params.id, clerkUserId: userId },
+    where: { id, clerkUserId: userId },
   });
   if (!existing) throw new ApiError("NOT_FOUND", "Workflow not found");
 
@@ -35,7 +42,7 @@ export const PATCH = withAuth(async (req, { userId, params }) => {
   if (data.flowState !== undefined) updateData.flowState = data.flowState as unknown;
 
   const workflow = await db.workflow.update({
-    where: { id: params.id },
+    where: { id },
     data: updateData as Parameters<typeof db.workflow.update>[0]["data"],
   });
 
@@ -43,12 +50,13 @@ export const PATCH = withAuth(async (req, { userId, params }) => {
 });
 
 export const DELETE = withAuth(async (_req, { userId, params }) => {
+  const { id } = paramsSchema.parse(params);
   const existing = await db.workflow.findFirst({
-    where: { id: params.id, clerkUserId: userId },
+    where: { id, clerkUserId: userId },
   });
   if (!existing) throw new ApiError("NOT_FOUND", "Workflow not found");
 
-  await db.workflow.delete({ where: { id: params.id } });
+  await db.workflow.delete({ where: { id } });
 
   return Response.json({ success: true });
 });

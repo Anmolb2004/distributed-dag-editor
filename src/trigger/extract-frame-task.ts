@@ -5,6 +5,7 @@ import { promisify } from "util";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { uploadBufferToTransloadit } from "@/lib/transloadit-server";
 
 const execFileAsync = promisify(execFile);
 
@@ -36,12 +37,10 @@ export const extractFrameTask = schemaTask({
       let seekTime = "0";
 
       if (payload.timestamp.endsWith("%")) {
-        // Percentage-based: get video duration first
         const durationResult = await execFileAsync(ffmpegBin, [
           "-i", inputPath,
           "-f", "null", "-",
         ]).catch((err) => {
-          // ffmpeg writes duration to stderr
           const match = (err.stderr as string)?.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
           if (match) {
             const hours = parseInt(match[1]);
@@ -68,10 +67,11 @@ export const extractFrameTask = schemaTask({
       ]);
 
       const outputBuffer = await fs.readFile(outputPath);
-      const base64 = outputBuffer.toString("base64");
-      const dataUrl = `data:image/png;base64,${base64}`;
 
-      return { output: dataUrl };
+      // Upload extracted frame to Transloadit for CDN URL
+      const url = await uploadBufferToTransloadit(outputBuffer, "frame.png", "image/png");
+
+      return { output: url };
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }

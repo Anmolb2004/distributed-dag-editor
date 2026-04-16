@@ -5,6 +5,7 @@ import { promisify } from "util";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { uploadBufferToTransloadit } from "@/lib/transloadit-server";
 
 const execFileAsync = promisify(execFile);
 
@@ -29,7 +30,6 @@ export const cropImageTask = schemaTask({
       const buffer = Buffer.from(await response.arrayBuffer());
       await fs.writeFile(inputPath, buffer);
 
-      // Use ffprobe to get dimensions
       let ffmpegBin: string;
       try {
         ffmpegBin = require("ffmpeg-static");
@@ -37,18 +37,6 @@ export const cropImageTask = schemaTask({
         ffmpegBin = "ffmpeg";
       }
 
-      // Get image dimensions
-      const probeResult = await execFileAsync(ffmpegBin, [
-        "-i", inputPath,
-        "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "stream=width,height",
-        "-of", "csv=p=0",
-        "-f", "null", "-",
-      ]).catch(() => null);
-
-      // Use FFmpeg crop filter with percentage-based params
-      // crop=w:h:x:y where values are expressions
       const cropFilter = `crop=iw*${payload.widthPercent / 100}:ih*${payload.heightPercent / 100}:iw*${payload.xPercent / 100}:ih*${payload.yPercent / 100}`;
 
       await execFileAsync(ffmpegBin, [
@@ -59,10 +47,11 @@ export const cropImageTask = schemaTask({
       ]);
 
       const outputBuffer = await fs.readFile(outputPath);
-      const base64 = outputBuffer.toString("base64");
-      const dataUrl = `data:image/png;base64,${base64}`;
 
-      return { output: dataUrl };
+      // Upload cropped image to Transloadit for CDN URL
+      const url = await uploadBufferToTransloadit(outputBuffer, "cropped.png", "image/png");
+
+      return { output: url };
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }

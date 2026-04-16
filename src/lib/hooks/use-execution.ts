@@ -9,6 +9,7 @@ export function useExecution() {
   const { workflowId, nodes, edges, viewport, updateNodeData } = useWorkflowStore();
   const { addRun, updateRun, updateNodeRun, setSelectedRunId } = useHistoryStore();
   const isRunningRef = useRef(false);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const saveWorkflow = useCallback(async () => {
     if (!workflowId) return;
@@ -19,20 +20,62 @@ export function useExecution() {
     });
   }, [workflowId, nodes, edges, viewport]);
 
+  /**
+   * Poll the DB for per-node status updates while execution runs.
+   * This gives accurate per-node glow: only the actually executing nodes glow.
+   */
+  const startPolling = useCallback(
+    (runId: string, tempRunId: string, runningIds: string[]) => {
+      const poll = async () => {
+        try {
+          const res = await fetch(`/api/workflows/${workflowId}/runs`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const serverRun = data.runs?.find(
+            (r: { id: string }) => r.id === runId
+          );
+          if (!serverRun) return;
+
+          // Update node glow states based on actual DB status
+          for (const nr of serverRun.nodeRuns as Array<{
+            nodeId: string;
+            status: string;
+          }>) {
+            const isNodeRunning = nr.status === "RUNNING";
+            const isNodeDone = ["SUCCESS", "FAILED", "SKIPPED"].includes(nr.status);
+
+            if (isNodeRunning) {
+              updateNodeData(nr.nodeId, { isRunning: true });
+            } else if (isNodeDone) {
+              updateNodeData(nr.nodeId, { isRunning: false });
+            }
+          }
+        } catch {
+          // Polling failure is non-fatal
+        }
+      };
+
+      pollingRef.current = setInterval(poll, 1500);
+    },
+    [workflowId, updateNodeData]
+  );
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
   const execute = useCallback(
     async (scope: "FULL" | "PARTIAL" | "SINGLE", targetNodeIds: string[] = []) => {
       if (!workflowId || isRunningRef.current) return;
       isRunningRef.current = true;
 
-      // Auto-save before executing
       await saveWorkflow();
 
-      // Set all target nodes to running state
       const runningIds =
         scope === "FULL" ? nodes.map((n) => n.id) : targetNodeIds;
-      for (const id of runningIds) {
-        updateNodeData(id, { isRunning: true });
-      }
 
       // Create optimistic run entry
       const tempId = `temp-${Date.now()}`;
@@ -49,7 +92,7 @@ export function useExecution() {
             nodeId: id,
             nodeType: (node?.data?.nodeType as string) ?? "unknown",
             nodeLabel: (node?.data?.label as string) ?? "Unknown",
-            status: "running" as const,
+            status: "pending" as const,
             inputs: {},
             outputs: {},
           };
@@ -59,7 +102,8 @@ export function useExecution() {
       setSelectedRunId(tempId);
 
       try {
-        const res = await fetch("/api/execute", {
+        // Fire off the execution request
+        const resPromise = fetch("/api/execute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -68,6 +112,29 @@ export function useExecution() {
             targetNodeIds,
           }),
         });
+
+        // Wait a moment for the run to be created in DB, then start polling
+        await new Promise((r) => setTimeout(r, 500));
+
+        // Try to get the run ID from a quick peek at the runs
+        let serverRunId: string | null = null;
+        try {
+          const peekRes = await fetch(`/api/workflows/${workflowId}/runs`);
+          if (peekRes.ok) {
+            const peekData = await peekRes.json();
+            const latestRun = peekData.runs?.[0];
+            if (latestRun && latestRun.status === "RUNNING") {
+              serverRunId = latestRun.id as string;
+              startPolling(serverRunId, tempId, runningIds);
+            }
+          }
+        } catch {
+          // Non-fatal
+        }
+
+        const res = await resPromise;
+
+        stopPolling();
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: { message: "Execution failed" } }));
@@ -78,7 +145,7 @@ export function useExecution() {
         const serverRun = data.run;
         const nodeOutputs = data.nodeOutputs as Record<string, Record<string, unknown>>;
 
-        // Update node data with outputs and remove running state
+        // Update node data with outputs and clear running state
         for (const [nodeId, outputs] of Object.entries(nodeOutputs)) {
           const node = nodes.find((n) => n.id === nodeId);
           const nodeType = (node?.data?.nodeType as string) ?? node?.type;
@@ -92,14 +159,14 @@ export function useExecution() {
           }
         }
 
-        // Clear running state for nodes that didn't produce output
+        // Clear running state for nodes without output (failed/skipped)
         for (const id of runningIds) {
           if (!nodeOutputs[id]) {
             updateNodeData(id, { isRunning: false });
           }
         }
 
-        // Update run entry with real data
+        // Update the run entry with real server data
         const mappedRun: WorkflowRunEntry = {
           id: serverRun.id,
           workflowId,
@@ -127,7 +194,7 @@ export function useExecution() {
         const statusMsg = serverRun.status === "SUCCESS" ? "completed" : "finished with errors";
         toast.success(`Workflow ${statusMsg} in ${(serverRun.durationMs / 1000).toFixed(1)}s`);
       } catch (err) {
-        // Clear running state
+        stopPolling();
         for (const id of runningIds) {
           updateNodeData(id, { isRunning: false });
         }
@@ -137,7 +204,7 @@ export function useExecution() {
         isRunningRef.current = false;
       }
     },
-    [workflowId, nodes, edges, viewport, saveWorkflow, updateNodeData, addRun, updateRun, updateNodeRun, setSelectedRunId]
+    [workflowId, nodes, edges, viewport, saveWorkflow, updateNodeData, addRun, updateRun, updateNodeRun, setSelectedRunId, startPolling, stopPolling]
   );
 
   const runFull = useCallback(() => execute("FULL"), [execute]);

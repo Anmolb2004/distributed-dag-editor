@@ -23,20 +23,9 @@ function TextNodeComponent({ id, data, selected }: NodeProps) {
       icon={<Type className="h-3.5 w-3.5" />}
       isSelected={selected}
       headerRight={
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span>Input</span>
-          <span>Output</span>
-        </div>
+        <span className="text-[10px] text-muted-foreground">Text</span>
       }
     >
-      {/* Input handle - left side */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="input"
-        className="!-left-[5px] !top-8 !h-2.5 !w-2.5 !border-2 !border-yellow-500 !bg-card"
-      />
-
       <div className="relative">
         <textarea
           value={(data.text as string) ?? ""}
@@ -54,12 +43,12 @@ function TextNodeComponent({ id, data, selected }: NodeProps) {
         </button>
       </div>
 
-      {/* Output handle - right side */}
+      {/* Output handle only - assignment specifies: "textarea + output handle" */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        className="!-right-[5px] !top-8 !h-2.5 !w-2.5 !border-2 !border-yellow-500 !bg-card"
+        className="-right-[5px]! top-1/2! h-2.5! w-2.5! border-2! border-yellow-500! bg-card!"
       />
     </NodeShell>
   );
