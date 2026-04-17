@@ -32,15 +32,11 @@ export async function uploadToTransloadit(
   const formData = new FormData();
   formData.append("file", file);
 
+  // No storage step: Transloadit keeps the file on its own tmp CDN and
+  // returns an ssl_url we can use directly. No AWS S3 required.
   const params = {
     auth: { key: AUTH_KEY },
-    steps: {
-      store: {
-        robot: "/s3/store",
-        use: ":original",
-        credentials: "s3_credentials",
-      },
-    },
+    steps: {},
   };
 
   formData.append("params", JSON.stringify(params));
@@ -51,22 +47,33 @@ export async function uploadToTransloadit(
   });
 
   if (!res.ok) {
-    throw new Error(`Transloadit upload failed: ${res.statusText}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(`Transloadit upload failed: ${res.status} ${text || res.statusText}`);
   }
 
   const data = await res.json();
 
-  // Poll for completion
+  // If the assembly already includes uploaded file info, return it directly.
+  const immediateUpload = data.uploads?.[0] as TransloaditResult | undefined;
+  if (immediateUpload?.ssl_url) {
+    return immediateUpload.ssl_url;
+  }
+
+  // Otherwise poll until the assembly completes and grab the uploaded URL.
   if (data.assembly_ssl_url) {
     const result = await pollAssembly(data.assembly_ssl_url);
-    const uploads = result.results?.[":original"] as TransloaditResult[] | undefined;
-    if (uploads?.[0]?.ssl_url) {
+    const uploads = (result.uploads as TransloaditResult[] | undefined) ?? [];
+    if (uploads[0]?.ssl_url) {
       return uploads[0].ssl_url;
+    }
+    const original = result.results?.[":original"] as TransloaditResult[] | undefined;
+    if (original?.[0]?.ssl_url) {
+      return original[0].ssl_url;
     }
   }
 
-  // Fallback: use tus_url or the assembly URL
-  return data.uploads?.[0]?.ssl_url ?? URL.createObjectURL(file);
+  // Last-resort fallback for local dev
+  return URL.createObjectURL(file);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

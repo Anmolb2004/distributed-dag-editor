@@ -19,15 +19,11 @@ export async function uploadBufferToTransloadit(
 
   const boundary = `----FormBoundary${Date.now()}${Math.random().toString(36).slice(2)}`;
 
+  // No /s3/store step — rely on Transloadit's tmp CDN so no AWS credentials
+  // need to be configured in the Transloadit dashboard.
   const params = JSON.stringify({
     auth: { key: AUTH_KEY },
-    steps: {
-      store: {
-        robot: "/s3/store",
-        use: ":original",
-        credentials: "s3_credentials",
-      },
-    },
+    steps: {},
   });
 
   // Build multipart form data manually (Node.js environment in Trigger.dev)
@@ -62,12 +58,22 @@ export async function uploadBufferToTransloadit(
 
   const data = await res.json();
 
+  // Immediate upload info (sometimes present right away)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const immediate = (data as any).uploads?.[0];
+  if (immediate?.ssl_url) return immediate.ssl_url as string;
+
   if (data.assembly_ssl_url) {
     const result = await pollAssembly(data.assembly_ssl_url);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uploads = (result as any).results?.[":original"];
+    const uploads = (result as any).uploads;
     if (Array.isArray(uploads) && uploads[0]?.ssl_url) {
       return uploads[0].ssl_url;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const original = (result as any).results?.[":original"];
+    if (Array.isArray(original) && original[0]?.ssl_url) {
+      return original[0].ssl_url;
     }
   }
 
