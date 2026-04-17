@@ -30,21 +30,22 @@ export const cropImageTask = schemaTask({
       const buffer = Buffer.from(await response.arrayBuffer());
       await fs.writeFile(inputPath, buffer);
 
-      let ffmpegBin: string;
-      try {
-        ffmpegBin = require("ffmpeg-static");
-      } catch {
-        ffmpegBin = "ffmpeg";
-      }
-
       const cropFilter = `crop=iw*${payload.widthPercent / 100}:ih*${payload.heightPercent / 100}:iw*${payload.xPercent / 100}:ih*${payload.yPercent / 100}`;
 
-      await execFileAsync(ffmpegBin, [
-        "-i", inputPath,
-        "-vf", cropFilter,
-        "-y",
-        outputPath,
-      ]);
+      try {
+        await execFileAsync("ffmpeg", [
+          "-i", inputPath,
+          "-vf", cropFilter,
+          "-y",
+          outputPath,
+        ]);
+      } catch (err) {
+        // Surface ffmpeg stderr so dashboard errors are actually actionable.
+        const stderr = (err as { stderr?: string }).stderr ?? "";
+        throw new Error(
+          `ffmpeg crop failed (filter=${cropFilter}): ${stderr.slice(-1000) || (err as Error).message}`
+        );
+      }
 
       const outputBuffer = await fs.readFile(outputPath);
 

@@ -1,4 +1,5 @@
 import { defineConfig } from "@trigger.dev/sdk";
+import { ffmpeg } from "@trigger.dev/build/extensions/core";
 
 export default defineConfig({
   project: "proj_dyxqdcnjxhjfgwlcxdyc",
@@ -14,5 +15,10 @@ export default defineConfig({
       maxTimeoutInMs: 10_000,
       randomize: true,
     },
+  },
+  build: {
+    // Installs a real ffmpeg binary into the Trigger.dev Docker image so
+    // the crop-image and extract-frame tasks can spawn it at runtime.
+    extensions: [ffmpeg()],
   },
 });
