@@ -19,11 +19,18 @@ export async function uploadBufferToTransloadit(
 
   const boundary = `----FormBoundary${Date.now()}${Math.random().toString(36).slice(2)}`;
 
-  // No /s3/store step — rely on Transloadit's tmp CDN so no AWS credentials
-  // need to be configured in the Transloadit dashboard.
+  // Pass-through step via /file/filter. No external storage credentials
+  // required — result file is exposed on Transloadit's tmp CDN.
   const params = JSON.stringify({
     auth: { key: AUTH_KEY },
-    steps: {},
+    steps: {
+      passthrough: {
+        robot: "/file/filter",
+        use: ":original",
+        accepts: [["${file.size}", ">=", 0]],
+        result: true,
+      },
+    },
   });
 
   // Build multipart form data manually (Node.js environment in Trigger.dev)
@@ -58,22 +65,22 @@ export async function uploadBufferToTransloadit(
 
   const data = await res.json();
 
-  // Immediate upload info (sometimes present right away)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const immediate = (data as any).uploads?.[0];
-  if (immediate?.ssl_url) return immediate.ssl_url as string;
-
   if (data.assembly_ssl_url) {
     const result = await pollAssembly(data.assembly_ssl_url);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uploads = (result as any).uploads;
-    if (Array.isArray(uploads) && uploads[0]?.ssl_url) {
-      return uploads[0].ssl_url;
+    const passthrough = (result as any).results?.passthrough;
+    if (Array.isArray(passthrough) && passthrough[0]?.ssl_url) {
+      return passthrough[0].ssl_url;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const original = (result as any).results?.[":original"];
     if (Array.isArray(original) && original[0]?.ssl_url) {
       return original[0].ssl_url;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const uploads = (result as any).uploads;
+    if (Array.isArray(uploads) && uploads[0]?.ssl_url) {
+      return uploads[0].ssl_url;
     }
   }
 

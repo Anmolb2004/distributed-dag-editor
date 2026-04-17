@@ -32,11 +32,19 @@ export async function uploadToTransloadit(
   const formData = new FormData();
   formData.append("file", file);
 
-  // No storage step: Transloadit keeps the file on its own tmp CDN and
-  // returns an ssl_url we can use directly. No AWS S3 required.
+  // Pass-through step using /file/filter: accepts everything, no
+  // external storage credentials required. The filtered file is
+  // exposed as a result on Transloadit's tmp CDN (~24h URL).
   const params = {
     auth: { key: AUTH_KEY },
-    steps: {},
+    steps: {
+      passthrough: {
+        robot: "/file/filter",
+        use: ":original",
+        accepts: [["${file.size}", ">=", 0]],
+        result: true,
+      },
+    },
   };
 
   formData.append("params", JSON.stringify(params));
@@ -53,22 +61,20 @@ export async function uploadToTransloadit(
 
   const data = await res.json();
 
-  // If the assembly already includes uploaded file info, return it directly.
-  const immediateUpload = data.uploads?.[0] as TransloaditResult | undefined;
-  if (immediateUpload?.ssl_url) {
-    return immediateUpload.ssl_url;
-  }
-
-  // Otherwise poll until the assembly completes and grab the uploaded URL.
+  // Poll until the assembly completes, then grab the result URL.
   if (data.assembly_ssl_url) {
     const result = await pollAssembly(data.assembly_ssl_url);
-    const uploads = (result.uploads as TransloaditResult[] | undefined) ?? [];
-    if (uploads[0]?.ssl_url) {
-      return uploads[0].ssl_url;
+    const passthrough = result.results?.passthrough as TransloaditResult[] | undefined;
+    if (passthrough?.[0]?.ssl_url) {
+      return passthrough[0].ssl_url;
     }
     const original = result.results?.[":original"] as TransloaditResult[] | undefined;
     if (original?.[0]?.ssl_url) {
       return original[0].ssl_url;
+    }
+    const uploads = (result.uploads as TransloaditResult[] | undefined) ?? [];
+    if (uploads[0]?.ssl_url) {
+      return uploads[0].ssl_url;
     }
   }
 
