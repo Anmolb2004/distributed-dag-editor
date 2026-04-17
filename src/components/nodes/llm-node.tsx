@@ -7,11 +7,30 @@ import { NodeShell } from "./node-shell";
 import { useWorkflowStore } from "@/store/workflow-store";
 import { useNodeExecution } from "@/lib/hooks/execution-context";
 
-const GEMINI_MODELS = [
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
-  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+type ModelOption = { id: string; label: string };
+type ModelGroup = { label: string; models: ModelOption[] };
+
+const MODEL_GROUPS: ModelGroup[] = [
+  {
+    label: "Google Gemini",
+    models: [
+      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+      { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+      { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+      { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+    ],
+  },
+  {
+    label: "Groq",
+    models: [
+      { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile" },
+      { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant" },
+      { id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B (Vision)" },
+      { id: "meta-llama/llama-4-maverick-17b-128e-instruct", label: "Llama 4 Maverick 17B" },
+      { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B" },
+      { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B" },
+    ],
+  },
 ];
 
 function LlmNodeComponent({ id, data, selected }: NodeProps) {
@@ -92,10 +111,14 @@ function LlmNodeComponent({ id, data, selected }: NodeProps) {
               onChange={onModelChange}
               className="h-7 w-full appearance-none rounded-md border border-border bg-input px-2 pr-7 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
             >
-              {GEMINI_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
+              {MODEL_GROUPS.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.models.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
