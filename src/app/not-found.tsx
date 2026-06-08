@@ -1,3 +1,6 @@
+/**
+ * Next.js `not-found` UI: unknown routes get a simple message and link back to the dashboard.
+ */
 import Link from "next/link";
 import { Workflow, ArrowLeft } from "lucide-react";
 

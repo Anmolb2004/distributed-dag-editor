@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Shared chrome for custom React Flow nodes: header, status/run affordance, selection ring, and content slot.
+ */
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Play, Loader2 } from "lucide-react";

@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Zustand store for the React Flow editor: nodes/edges, selection, viewport, undo/redo, and persistence helpers.
+ */
 import { create } from "zustand";
 import {
   type Edge,

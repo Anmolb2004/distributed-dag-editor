@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Editor left rail: searchable palette of draggable node types to add to the canvas.
+ */
 import { useState } from "react";
 import {
   Type,

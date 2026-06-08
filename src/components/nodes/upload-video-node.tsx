@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React Flow node: local file picker that uploads videos via Transloadit (or object URL fallback) and exposes a URL handle.
+ */
 import { memo, useCallback, useRef, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Video, Upload, X, Loader2 } from "lucide-react";

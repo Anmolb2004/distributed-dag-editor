@@ -1,3 +1,6 @@
+/**
+ * Home route: sends signed-in users to the dashboard and others to sign-in.
+ */
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 

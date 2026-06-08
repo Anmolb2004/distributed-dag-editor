@@ -1,3 +1,6 @@
+/**
+ * Trigger.dev task: calls Gemini or Groq from a single model id, optional system prompt, text, and image inputs.
+ */
 import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";

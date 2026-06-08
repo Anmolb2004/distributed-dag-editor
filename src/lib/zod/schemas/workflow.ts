@@ -1,3 +1,6 @@
+/**
+ * Zod schemas for creating/updating workflows and validating workflow ids in API handlers.
+ */
 import { z } from "zod";
 
 export const createWorkflowSchema = z.object({

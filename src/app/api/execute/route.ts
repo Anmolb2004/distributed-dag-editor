@@ -1,3 +1,6 @@
+/**
+ * REST API: starts a workflow execution via Trigger.dev—builds execution layers from the graph and persists a run record.
+ */
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/api/with-auth";
 import { ApiError } from "@/lib/api/errors";

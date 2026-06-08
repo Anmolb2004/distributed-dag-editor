@@ -1,3 +1,6 @@
+/**
+ * REST API: returns run history (with node runs) for a workflow owned by the current user.
+ */
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/api/with-auth";

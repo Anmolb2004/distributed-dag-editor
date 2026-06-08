@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React Flow node: percentage-based crop controls with live preview wiring to the server-side FFmpeg crop task.
+ */
 import { memo, useCallback } from "react";
 import { Handle, Position, type NodeProps, useEdges } from "@xyflow/react";
 import { Crop } from "lucide-react";

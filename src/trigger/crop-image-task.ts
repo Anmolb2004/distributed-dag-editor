@@ -1,3 +1,6 @@
+/**
+ * Trigger.dev task: downloads an image, crops via FFmpeg by percentage box, uploads result to Transloadit (or data URL fallback).
+ */
 import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { execFile } from "child_process";

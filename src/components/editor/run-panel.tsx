@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Run controls docked on the canvas: full-graph run vs run selected subgraph when nodes are selected.
+ */
 import { Play, Square, LayoutGrid, AlignVerticalSpaceAround } from "lucide-react";
 import { cn } from "@/lib/utils";
 

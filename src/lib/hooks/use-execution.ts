@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React hook: saves flow state, calls `/api/execute`, polls run status, and syncs node “running” UI from the database.
+ */
 import { useCallback, useRef } from "react";
 import { useWorkflowStore } from "@/store/workflow-store";
 import { useHistoryStore, type WorkflowRunEntry, type NodeRunEntry } from "@/store/history-store";

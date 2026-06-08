@@ -1,3 +1,6 @@
+/**
+ * Next.js build/runtime config (images, server action body size, etc.).
+ */
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

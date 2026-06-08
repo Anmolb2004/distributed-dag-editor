@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React Flow node: freeform text/prompt with copy and standard text handles for wiring into LLM nodes.
+ */
 import { memo, useCallback } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Type, Copy } from "lucide-react";

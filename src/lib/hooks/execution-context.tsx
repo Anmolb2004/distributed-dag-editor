@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React context: exposes “run this node only” from the workflow editor to individual custom nodes.
+ */
 import { createContext, useContext, type ReactNode } from "react";
 
 interface ExecutionContextValue {

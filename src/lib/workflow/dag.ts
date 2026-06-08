@@ -1,3 +1,6 @@
+/**
+ * Workflow graph utilities: topological layering for parallel execution and resolving per-node inputs from upstream nodes.
+ */
 import type { Edge, Node } from "@xyflow/react";
 
 export interface ExecutionLayer {

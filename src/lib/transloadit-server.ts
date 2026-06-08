@@ -1,8 +1,7 @@
 /**
- * Server-side Transloadit upload for Trigger.dev tasks.
- * Uploads a buffer (from FFmpeg output) to Transloadit and returns a CDN URL.
+ * Server-only Transloadit client for Trigger.dev tasks: uploads buffers (e.g. FFmpeg output) to Transloadit for CDN URLs,
+ * or returns a base64 data URL when credentials are missing.
  */
-
 const AUTH_KEY = process.env.NEXT_PUBLIC_TRANSLOADIT_AUTH_KEY;
 const AUTH_SECRET = process.env.TRANSLOADIT_AUTH_SECRET;
 

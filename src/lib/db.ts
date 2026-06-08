@@ -1,3 +1,6 @@
+/**
+ * Singleton Prisma client wired to Neon (serverless Postgres) for all database access.
+ */
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 

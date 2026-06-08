@@ -1,3 +1,6 @@
+/**
+ * Edge middleware: Clerk session checks; public routes stay open, everything else requires auth.
+ */
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isPublicRoute = createRouteMatcher([

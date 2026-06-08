@@ -1,3 +1,6 @@
+/**
+ * Trigger.dev task: validates an uploaded video URL for the video-upload node (passthrough to downstream nodes).
+ */
 import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 

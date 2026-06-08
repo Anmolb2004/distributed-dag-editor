@@ -1,3 +1,6 @@
+/**
+ * REST API: get, update, or delete a single workflow by id (scoped to the authenticated user).
+ */
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/api/with-auth";

@@ -1,3 +1,6 @@
+/**
+ * Browser-side uploads to Transloadit (images/videos); falls back to local object URLs when no API key is set.
+ */
 const AUTH_KEY = process.env.NEXT_PUBLIC_TRANSLOADIT_AUTH_KEY;
 
 interface TransloaditResult {

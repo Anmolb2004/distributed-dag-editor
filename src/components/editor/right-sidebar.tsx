@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Editor right rail: run history list and expandable per-node inputs/outputs for the selected run.
+ */
 import { X, CheckCircle2, XCircle, Clock, Loader2, MinusCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Top editor chrome: workflow title, save, import/export, sidebar toggles, and navigation back to the dashboard.
+ */
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {

@@ -1,3 +1,6 @@
+/**
+ * Root HTML layout: fonts, global styles, metadata, and wraps all pages with shared providers.
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";

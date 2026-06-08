@@ -1,3 +1,6 @@
+/**
+ * Small date/duration formatters for UI copy (relative times, run durations, timestamps).
+ */
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;

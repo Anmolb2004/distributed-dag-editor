@@ -1,3 +1,6 @@
+/**
+ * Trigger.dev task: passthrough text node output (no remote I/O).
+ */
 import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 

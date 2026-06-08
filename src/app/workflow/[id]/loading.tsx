@@ -1,3 +1,6 @@
+/**
+ * `loading.tsx` for `/workflow/[id]`: centered spinner while the workflow document is fetched.
+ */
 import { Loader2 } from "lucide-react";
 
 export default function WorkflowLoading() {

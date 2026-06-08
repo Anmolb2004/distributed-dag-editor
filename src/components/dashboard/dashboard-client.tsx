@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Dashboard UI: searchable workflow grid, create/import/export/delete, and Clerk account menu.
+ */
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";

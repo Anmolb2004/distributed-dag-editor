@@ -1,3 +1,6 @@
+/**
+ * `loading.tsx` for `/dashboard`: skeleton header and card placeholders while the server page loads.
+ */
 import { Workflow } from "lucide-react";
 
 export default function DashboardLoading() {

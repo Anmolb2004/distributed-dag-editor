@@ -1,3 +1,6 @@
+/**
+ * Zod schema for the execute-workflow API body (full/partial/single scope and target node ids).
+ */
 import { z } from "zod";
 
 export const executeWorkflowSchema = z.object({

@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Main workflow editor: React Flow canvas, custom nodes, sidebars, run controls, and execution wiring.
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,

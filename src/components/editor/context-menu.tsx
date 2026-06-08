@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Right-click context menu for a node: run, duplicate, delete, fit view, and dismiss-on-outside-click behavior.
+ */
 import { useEffect, useRef } from "react";
 import { Play, Trash2, Copy, Maximize } from "lucide-react";
 

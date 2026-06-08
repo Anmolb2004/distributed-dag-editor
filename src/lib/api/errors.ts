@@ -1,3 +1,6 @@
+/**
+ * Typed API errors and helpers to serialize them as consistent JSON HTTP responses.
+ */
 import { z } from "zod";
 
 export type ApiErrorCode =

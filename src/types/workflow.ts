@@ -1,3 +1,6 @@
+/**
+ * Shared workflow domain types: node kinds, handle metadata, connection rules, and node registry for the editor UI.
+ */
 export const NODE_TYPES = {
   TEXT: "text",
   UPLOAD_IMAGE: "uploadImage",

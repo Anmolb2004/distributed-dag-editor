@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Next.js `error.tsx` boundary: full-screen friendly error state with retry for unexpected client/server failures.
+ */
 import { useEffect } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 

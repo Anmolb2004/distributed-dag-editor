@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React Flow node: model picker (Gemini/Groq), system + user messages, image inputs, and run-single support.
+ */
 import { memo, useCallback } from "react";
 import { Handle, Position, type NodeProps, useEdges } from "@xyflow/react";
 import { Brain, ChevronDown } from "lucide-react";

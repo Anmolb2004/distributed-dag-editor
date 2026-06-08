@@ -1,6 +1,5 @@
 /**
- * Inline sample workflow definition for first-login auto-seed
- * when the Prisma seed template doesn't exist.
+ * Default sample React Flow document used when no seeded template exists in the database.
  */
 export function getSampleFlowState() {
   const nodes = [

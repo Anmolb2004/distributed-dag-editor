@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Root client providers: Clerk auth/theming, Sonner toasts, and shared UI wrappers for the app shell.
+ */
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { Toaster } from "sonner";

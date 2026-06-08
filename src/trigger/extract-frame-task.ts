@@ -1,3 +1,6 @@
+/**
+ * Trigger.dev task: downloads a video, extracts a frame at a timestamp with FFmpeg, uploads PNG to Transloadit (or data URL fallback).
+ */
 import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { execFile } from "child_process";

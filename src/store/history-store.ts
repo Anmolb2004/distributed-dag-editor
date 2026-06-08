@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Zustand store for workflow run history and the currently inspected run in the editor sidebar.
+ */
 import { create } from "zustand";
 
 export interface NodeRunEntry {

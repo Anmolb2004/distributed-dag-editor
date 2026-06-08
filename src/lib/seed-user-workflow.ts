@@ -1,3 +1,6 @@
+/**
+ * Onboarding helper: if the user has no workflows yet, clone the seed template or create the inline sample graph.
+ */
 import { db } from "@/lib/db";
 
 const SAMPLE_WORKFLOW_NAME = "Product Marketing Kit Generator";

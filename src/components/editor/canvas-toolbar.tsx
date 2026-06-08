@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * Floating toolbar over the canvas: pan/zoom modes, undo/redo, fit view, and keyboard shortcut reference.
+ */
 import { useCallback, useState } from "react";
 import {
   Plus,

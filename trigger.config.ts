@@ -1,3 +1,6 @@
+/**
+ * Trigger.dev project config: task directories, timeouts, retries, and FFmpeg build extension.
+ */
 import { defineConfig } from "@trigger.dev/sdk";
 import { ffmpeg } from "@trigger.dev/build/extensions/core";
 

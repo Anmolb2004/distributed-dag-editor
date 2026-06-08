@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * React Flow node: chooses a timestamp, pulls video/text inputs from edges, and runs frame extraction against the video task.
+ */
 import { memo } from "react";
 import { Handle, Position, type NodeProps, useEdges } from "@xyflow/react";
 import { Film } from "lucide-react";

@@ -1,12 +1,10 @@
+/**
+ * API route helper: authenticates with Clerk, injects `userId` and dynamic route `params`, and maps errors to JSON responses.
+ */
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 import { ApiError, handleApiError } from "./errors";
 
-/**
- * Higher-order auth wrapper (Dub pattern: `withWorkspace`).
- * Authenticates the request and passes userId to the handler.
- * All error handling is centralized here.
- */
 export function withAuth(
   handler: (
     req: NextRequest,

@@ -1,3 +1,6 @@
+/**
+ * Prisma seed script: creates the canonical “Product Marketing Kit” template workflow in the database for new users to clone.
+ */
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";

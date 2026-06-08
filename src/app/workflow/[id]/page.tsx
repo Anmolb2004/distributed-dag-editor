@@ -1,3 +1,6 @@
+/**
+ * Workflow editor page (server): loads one workflow (with recent runs) for the signed-in owner or redirects.
+ */
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";

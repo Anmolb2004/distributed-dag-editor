@@ -1,3 +1,6 @@
+/**
+ * Clerk-hosted sign-in page wrapped in NextFlow branding.
+ */
 import { SignIn } from "@clerk/nextjs";
 import { Workflow } from "lucide-react";
 

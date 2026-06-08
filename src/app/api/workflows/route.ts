@@ -1,3 +1,6 @@
+/**
+ * REST API: list workflows for the current user and create a new empty workflow.
+ */
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/api/with-auth";
